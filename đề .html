@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bacteria & Fungi Exam Simulator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Outfit:wght@700;800&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #6366f1; --secondary: #10b981; --bg: #0f172a; --card: #1e293b; --text: #f8fafc; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { background: var(--bg); color: var(--text); min-height: 100vh; display: flex; justify-content: center; align-items: center; }
+        #app { width: 95%; max-width: 800px; padding: 20px; }
+        .card { background: var(--card); border-radius: 24px; padding: 35px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); }
+        h1 { font-family: 'Outfit', sans-serif; text-align: center; margin-bottom: 10px; background: linear-gradient(to right, #818cf8, #34d399); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 2.2rem; }
+        .subtitle { text-align: center; color: #94a3b8; margin-bottom: 30px; font-size: 1rem; }
+        .btn { background: var(--primary); color: white; border: none; padding: 16px; border-radius: 12px; font-weight: 700; cursor: pointer; transition: 0.3s; width: 100%; font-size: 1rem; margin-top: 10px; }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4); }
+        .stats { display: flex; justify-content: space-between; margin-bottom: 15px; color: #94a3b8; font-weight: 600; }
+        .progress-bar { height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; margin-bottom: 25px; overflow: hidden; }
+        .progress-fill { height: 100%; background: var(--primary); width: 0%; transition: 0.4s; }
+        .question-box h2 { font-size: 1.3rem; margin-bottom: 25px; line-height: 1.5; font-weight: 500; }
+        .option-btn { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); padding: 18px; border-radius: 15px; color: var(--text); text-align: left; cursor: pointer; transition: 0.2s; width: 100%; margin-bottom: 12px; font-size: 1.05rem; }
+        .option-btn:hover { background: rgba(255,255,255,0.08); border-color: var(--primary); }
+        .option-btn.correct { background: rgba(16, 185, 129, 0.2) !important; border-color: var(--secondary) !important; color: #10b981; font-weight: 600; }
+        .option-btn.wrong { background: rgba(239, 68, 68, 0.2) !important; border-color: #ef4444 !important; color: #ef4444; }
+        .fib-input { width: 100%; background: rgba(255,255,255,0.03); border: 2px solid rgba(255,255,255,0.1); padding: 18px; border-radius: 15px; color: var(--text); font-size: 1.2rem; outline: none; margin-bottom: 15px; }
+        .explanation { margin-top: 20px; padding: 22px; background: rgba(255,255,255,0.05); border-left: 5px solid var(--primary); display: none; border-radius: 12px; animation: slideUp 0.4s ease; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .cite { color: var(--secondary); font-weight: 800; font-size: 0.85rem; display: block; margin-bottom: 8px; text-transform: uppercase; }
+        .hidden { display: none; }
+        .score-circle { width: 150px; height: 150px; border-radius: 50%; border: 8px solid var(--primary); display: flex; flex-direction: column; justify-content: center; align-items: center; margin: 0 auto 25px; }
+    </style>
+</head>
+<body>
+
+<div id="app">
+    <div id="menu" class="card">
+        <h1>Microbiology Prep</h1>
+        <p class="subtitle">Mô phỏng đề thi: Vi khuẩn & Vi nấm (50 câu/đề)</p>
+        <button class="btn" onclick="sim.start(1)">BẮT ĐẦU BỘ ĐỀ SỐ 1</button>
+        <button class="btn" style="background:#4338ca; margin-top:15px;" onclick="sim.start(2)">BẮT ĐẦU BỘ ĐỀ SỐ 2</button>
+        <p style="text-align:center; margin-top:20px; color:#64748b; font-size:0.85rem;">Mỗi đề gồm 25 câu Trắc nghiệm & 25 câu Điền từ</p>
+    </div>
+
+    <div id="quiz" class="card hidden">
+        <div class="stats">
+            <span id="q-idx">Câu hỏi: 1/50</span>
+            <span id="q-score">Điểm: 0</span>
+        </div>
+        <div class="progress-bar"><div id="fill" class="progress-fill"></div></div>
+        <div id="q-box"></div>
+        <div id="exp" class="explanation">
+            <span class="cite" id="exp-cite">NGUỒN KIẾN THỨC</span>
+            <p id="exp-txt"></p>
+        </div>
+        <button id="next" class="btn hidden" onclick="sim.next()">TIẾP THEO</button>
+    </div>
+
+    <div id="res" class="card hidden" style="text-align:center;">
+        <h1>Kết Quả</h1>
+        <div class="score-circle"><span id="f-score" style="font-size: 3.5rem; font-weight: 800; color: var(--secondary);">0</span></div>
+        <p id="msg" style="color: #94a3b8; margin-bottom: 30px; line-height: 1.6;"></p>
+        <button class="btn" onclick="location.reload()">LÀM LẠI</button>
+    </div>
+</div>
+
+<script>
+const examData = {
+    1: [
+        // --- MCQ (25 CÂU) ---
+        { type: "mcq", question: "Thành phần cấu tạo chính của thành tế bào nấm là gì?", options: ["Peptidoglycan", "Chitin và Glucan", "Cellulose", "Lipopolysaccharide"], answer: "Chitin và Glucan", cite: "TRANG 6 - PDF VI NẤM", exp: "Nấm dùng chitin/glucan thay vì peptidoglycan như vi khuẩn." },
+        { type: "mcq", question: "Kích thước phổ biến của phần lớn tế bào vi khuẩn là bao nhiêu?", options: ["0,5–5 µm", "10–100 µm", "1–10 nm", "0,1–1 mm"], answer: "0,5–5 µm", cite: "TRANG 1 - PDF VI KHUẨN", exp: "Hầu hết tế bào nhân sơ nhỏ hơn nhiều so với nhân thực." },
+        { type: "mcq", question: "Nấm lấy chất dinh dưỡng từ môi trường theo cơ chế nào?", options: ["Quang hợp", "Hấp thụ (Hóa dị dưỡng)", "Thực bào", "Cố định đạm"], answer: "Hấp thụ (Hóa dị dưỡng)", cite: "TRANG 10 - PDF VI NẤM", exp: "Nấm tiết enzyme ngoại bào để phân hủy chất hữu cơ." },
+        { type: "mcq", question: "Vi khuẩn Gram dương giữ được màu tím tinh thể nhờ lớp peptidoglycan dày bao nhiêu lớp?", options: ["1-2 lớp", "5-10 lớp", "30-45 lớp", "Trên 100 lớp"], answer: "30-45 lớp", cite: "TRANG 3 - PDF VI KHUẨN", exp: "Độ dày này bẫy phức hợp màu khi nhuộm Gram." },
+        { type: "mcq", question: "Sợi nấm cộng bào (Coenocytic) có đặc điểm nổi bật là?", options: ["Nhiều vách ngăn ngang", "Không có vách ngăn ngang", "Chỉ có một nhân duy nhất", "Làm từ tinh bột"], answer: "Không có vách ngăn ngang", cite: "TRANG 26 - PDF VI NẤM", exp: "Nhân và bào quan lưu thông tự do trong sợi nấm." },
+        { type: "mcq", question: "Chất nào giúp nội bào tử vi khuẩn có khả năng chịu nhiệt cực cao?", options: ["Axit amin", "LPS", "Axit Dipicolinic và Ca2+", "Axit teichoic"], answer: "Axit Dipicolinic và Ca2+", cite: "TRANG 7 - PDF VI KHUẨN", exp: "Ổn định cấu trúc DNA dưới tác động nhiệt." },
+        { type: "mcq", question: "Nấm men sinh sản vô tính bằng hình thức nào?", options: ["Tạo bào tử nang", "Nảy chồi", "Tiếp hợp", "Tạo bào tử đảm"], answer: "Nảy chồi", cite: "TRANG 37 - PDF VI NẤM", exp: "Tế bào chồi mọc từ tế bào mẹ và tách rời." },
+        { type: "mcq", question: "Vi khuẩn Rhizobium có vai trò quan trọng gì trong tự nhiên?", options: ["Gây loét dạ dày", "Cố định đạm khí quyển cộng sinh", "Sản xuất kháng sinh", "Phân hủy gỗ"], answer: "Cố định đạm khí quyển cộng sinh", cite: "TRANG 12 - PDF VI KHUẨN", exp: "Sống cộng sinh trong nốt rễ cây họ Đậu." },
+        { type: "mcq", question: "Địa y là kết hợp cộng sinh giữa nấm và sinh vật nào?", options: ["Rễ cây", "Tảo hoặc Vi khuẩn lam", "Động vật", "Vi khuẩn Gram dương"], answer: "Tảo hoặc Vi khuẩn lam", cite: "TRANG 68 - PDF VI NẤM", exp: "Mối quan hệ tương hỗ quang hợp - nơi ở." },
+        { type: "mcq", question: "Vi khuẩn gây loét dạ dày ở người thuộc phân nhóm Proteobacteria nào?", options: ["Alpha", "Beta", "Gamma", "Epsilon"], answer: "Epsilon", cite: "TRANG 12 - PDF VI KHUẨN", exp: "Đại diện là Helicobacter pylori." },
+        { type: "mcq", question: "Cấu trúc Haustoria ở nấm ký sinh có chức năng gì?", options: ["Di chuyển", "Hút dinh dưỡng từ vật chủ", "Sinh sản hữu tính", "Quang hợp"], answer: "Hút dinh dưỡng từ vật chủ", cite: "TRANG 25 - PDF VI NẤM", exp: "Sợi hút đâm sâu vào mô cây chủ." },
+        { type: "mcq", question: "Vi khuẩn Gram âm có thành phần nào ở màng ngoài gây sốc cho vật chủ?", options: ["Peptidoglycan", "Lipopolysaccharide (LPS)", "Axit teichoic", "Protein S"], answer: "Lipopolysaccharide (LPS)", cite: "TRANG 14 - PDF VI KHUẨN", exp: "LPS là nội độc tố giải phóng khi vi khuẩn chết." },
+        { type: "mcq", question: "Bệnh gỉ sắt và cháy lá ở cây trồng thường do nhóm nấm nào?", options: ["Zygomycetes", "Ascomycetes", "Basidiomycetes", "Chytrids"], answer: "Basidiomycetes", cite: "TRANG 58 - PDF VI NẤM", exp: "Nhóm nấm đảm chứa nhiều tác nhân gây bệnh thực vật." },
+        { type: "mcq", question: "Độ ẩm không khí cần thiết cho nấm sợi phát triển mạnh là?", options: ["Dưới 50%", "Dưới 70%", "Trên 70%", "100%"], answer: "Trên 70%", cite: "TRANG 13 - PDF VI NẤM", exp: "Nấm sợi rất ưa môi trường ẩm ướt." },
+        { type: "mcq", question: "Cấu trúc tiên mao (Flagella) vi khuẩn gồm 3 phần là?", options: ["Đầu, cổ, đuôi", "Filament, Hook, Motor", "Vỏ, lõi, thân", "Màng, vách, nhân"], answer: "Filament, Hook, Motor", cite: "TRANG 5 - PDF VI KHUẨN", exp: "Hoạt động theo cơ chế xoay tròn độc đáo." },
+        { type: "mcq", question: "Giai đoạn Karyogamy trong sinh sản hữu tính của nấm là gì?", options: ["Hợp nhất tế bào chất", "Hợp nhất nhân đơn bội", "Giảm phân", "Nảy mầm"], answer: "Hợp nhất nhân đơn bội", cite: "TRANG 33 - PDF VI NẤM", exp: "Tạo thành nhân lưỡng bội (2n)." },
+        { type: "mcq", question: "Môi trường Sabouraud dùng để nuôi cấy nấm chủ yếu chứa?", options: ["Thạch máu", "Glucose và Peptone", "Lactose", "Muối mặn 32%"], answer: "Glucose và Peptone", cite: "TRANG 11 - PDF VI NẤM", exp: "Môi trường dinh dưỡng cơ bản cho vi nấm." },
+        { type: "mcq", question: "Vi khuẩn 'hóa tự dưỡng' (Chemoautotroph) lấy carbon từ đâu?", options: ["Chất hữu cơ", "CO2", "Ánh sáng", "Nước"], answer: "CO2", cite: "TRANG 10 - PDF VI KHUẨN", exp: "Lấy năng lượng từ hóa chất và carbon từ CO2." },
+        { type: "mcq", question: "Xạ khuẩn (Actinomyces) có hình thái đặc trưng là?", options: ["Hình cầu đơn độc", "Hệ sợi phân nhánh", "Hình viên gạch", "Hình xoắn"], answer: "Hệ sợi phân nhánh", cite: "TRANG 3 - PDF VI KHUẨN", exp: "Dễ bị nhầm với nấm nhưng là vi khuẩn nhân sơ." },
+        { type: "mcq", question: "Mỗi túi ascus ở nấm túi thường chứa bao nhiêu bào tử nang?", options: ["2", "4", "8", "16"], answer: "8", cite: "TRANG 53 - PDF VI NẤM", exp: "Số lượng bào tử chuẩn ở ngành Ascomycota." },
+        { type: "mcq", question: "Kháng sinh Penicillin tiêu diệt vi khuẩn bằng cách?", options: ["Phá hủy DNA", "Ức chế tổng hợp cầu nối peptit", "Phá hủy Ribosome", "Ngăn cản di chuyển"], answer: "Ức chế tổng hợp cầu nối peptit", cite: "TRANG 3 - PDF VI KHUẨN", exp: "Làm thành tế bào yếu đi và gây vỡ tế bào." },
+        { type: "mcq", question: "Nystatin là thuốc kháng nấm đặc hiệu trị bệnh nào?", options: ["Nấm Candida", "Bệnh than", "Giang mai", "Sốt rét"], answer: "Nấm Candida", cite: "TRANG 79 - PDF VI NẤM", exp: "Được Hazen và Brown tìm ra năm 1950." },
+        { type: "mcq", question: "Vi khuẩn Mycoplasma có đặc điểm gì khác biệt?", options: ["Thành tế bào dày", "Không có thành tế bào", "Sống ở 100 độ C", "Quang hợp tạo Oxy"], answer: "Không có thành tế bào", cite: "TRANG 3 - PDF VI KHUẨN", exp: "Là vi khuẩn nhỏ nhất và không có thành tế bào." },
+        { type: "mcq", question: "Cấu trúc Rhizomorph ở nấm đảm có hình dạng giống?", options: ["Cánh hoa", "Rễ cây", "Mạng nhện", "Bào tử"], answer: "Rễ cây", cite: "TRANG 59 - PDF VI NẤM", exp: "Các bó sợi khuẩn ty quấn chặt." },
+        { type: "mcq", question: "Hạt vùi Volutin trong tế bào vi khuẩn dự trữ gì?", options: ["Lipid", "Tinh bột", "Photphat", "Lưu huỳnh"], answer: "Photphat", cite: "TRANG 6 - PDF VI KHUẨN", exp: "Nguồn năng lượng dự trữ cho tế bào." },
+
+        // --- FIB (25 CÂU) ---
+        { type: "fib", question: "Vi khuẩn Gram dương giữ màu tím sau khi tẩy cồn nhờ lớp [...] dày.", answer: "peptidoglycan", cite: "Trang 3 - Vi khuẩn", exp: "Lớp vỏ này ngăn cồn rửa trôi màu tím tinh thể." },
+        { type: "fib", question: "Thành tế bào nấm chứa chitin và [...].", answer: "glucan", cite: "Trang 6 - Vi nấm", exp: "Bộ khung polysaccharide đặc trưng của nấm." },
+        { type: "fib", question: "Vùng chứa DNA của vi khuẩn gọi là [...].", answer: "nucleoid", cite: "Trang 5 - Vi khuẩn", exp: "Không có màng nhân bao bọc." },
+        { type: "fib", question: "Hệ sợi nấm được gọi chung là [...].", answer: "mycelium / khuẩn ty", cite: "Trang 9 - Vi nấm", exp: "Mạng lưới các sợi nấm (hyphae) tạo thành." },
+        { type: "fib", question: "Vi khuẩn Agrobacterium dùng trong kỹ thuật [...] thực vật.", answer: "di truyền / chuyển gen", cite: "Trang 12 - Vi khuẩn", exp: "Dùng để truyền DNA vào cây trồng." },
+        { type: "fib", question: "Nấm men sinh sản vô tính bằng cách [...].", answer: "nảy chồi", cite: "Trang 37 - Vi nấm", exp: "Đặc trưng của S. cerevisiae." },
+        { type: "fib", question: "Sự truyền DNA qua Sex-pilli gọi là quá trình [...].", answer: "tiếp hợp / conjugation", cite: "Trang 9 - Vi khuẩn", exp: "Hình thức sinh sản hữu tính nguyên thủy." },
+        { type: "fib", question: "Địa y dạng [...] có hình dạng như những cái vảy bám đá.", answer: "crustose", cite: "Trang 69 - Vi nấm", exp: "Phân loại theo hình thái địa y." },
+        { type: "fib", question: "Thời gian thế hệ của E. coli khoảng [...] phút.", answer: "20", cite: "Trang 6 - Vi khuẩn", exp: "Tốc độ sinh sản cực nhanh ở điều kiện tối ưu." },
+        { type: "fib", question: "Bào tử [...] ở nấm đảm sinh ra sau giảm phân.", answer: "hữu tính / đảm", cite: "Trang 60 - Vi nấm", exp: "Đặc điểm ngành Basidiomycota." },
+        { type: "fib", question: "Protein chiếm khoảng [...] % trong màng sinh chất vi khuẩn.", answer: "50", cite: "Trang 5 - Vi khuẩn", exp: "Tỉ lệ protein rất cao trong màng nhân sơ." },
+        { type: "fib", question: "Nấm cộng sinh rễ cây gọi là [...].", answer: "mycorrhizae / nấm rễ", cite: "Trang 64 - Vi nấm", exp: "Mối quan hệ tương hỗ quan trọng." },
+        { type: "fib", question: "Ribosome của vi khuẩn có kích thước [...] S.", answer: "70", cite: "Trang 6 - Vi khuẩn", exp: "Gồm 30S và 50S." },
+        { type: "fib", question: "Bào tử nang sinh ra trong các túi gọi là [...].", answer: "ascus / nang", cite: "Trang 53 - Vi nấm", exp: "Đặc điểm ngành Ascomycota." },
+        { type: "fib", question: "Nhuộm Gram, vi khuẩn Gram âm có màu [...].", answer: "đỏ / hồng", cite: "Trang 3 - Vi khuẩn", exp: "Do bắt màu safranin sau tẩy cồn." },
+        { type: "fib", question: "Enzyme phân hủy vỏ nấm là [...].", answer: "chitinase", cite: "Trang 6 - Vi nấm", exp: "Cắt các liên kết trong chitin." },
+        { type: "fib", question: "Vi khuẩn [...] Proteobacteria gồm loài Nitrosomonas.", answer: "Beta", cite: "Trang 12 - Vi khuẩn", exp: "Chuyển hóa NH4+ thành NO2-." },
+        { type: "fib", question: "Địa y rất nhạy cảm với [...] không khí.", answer: "ô nhiễm", cite: "Trang 71 - Vi nấm", exp: "Dùng làm chỉ thị môi trường." },
+        { type: "fib", question: "Đơn vị cơ sở phân loại vi khuẩn là [...].", answer: "loài", cite: "Trang 8 - Vi khuẩn", exp: "Species." },
+        { type: "fib", question: "Nấm rơm thuộc nhóm nấm [...].", answer: "đảm / basidiomycetes", cite: "Trang 58 - Vi nấm", exp: "Dựa trên cấu trúc mang bào tử." },
+        { type: "fib", question: "Hạt vùi [...] giúp vi khuẩn định hướng từ trường.", answer: "oxit sắt", cite: "Trang 6 - Vi khuẩn", exp: "Magnetosomes." },
+        { type: "fib", question: "Bào tử nấm bao dày chịu hạn gọi là [...].", answer: "chlamydospore", cite: "Trang 40 - Vi nấm", exp: "Tồn tại khi thiếu dinh dưỡng." },
+        { type: "fib", question: "Vi khuẩn lam cố định đạm trong tế bào hạt [...].", answer: "heterocysts", cite: "Trang 10 - Vi khuẩn", exp: "Tế bào chuyên hóa thiếu oxy." },
+        { type: "fib", question: "Neurospora sau nguyên phân tạo [...] bào tử nang.", answer: "8", cite: "Trang 52 - Vi nấm", exp: "Chu kỳ hữu tính." },
+        { type: "fib", question: "Màng tế bào vi khuẩn không chứa [...] (sterol).", answer: "cholesterol", cite: "Kiến thức", exp: "Trừ một vài biệt lệ như Mycoplasma." }
+    ],
+    2: [
+        // --- MCQ (25 CÂU) ---
+        { type: "mcq", question: "Vi khuẩn Bacillus anthracis gây bệnh gì?", options: ["Bệnh than", "Ngộ độc thịt", "Bệnh lị", "Sốt xuất huyết"], answer: "Bệnh than", cite: "Trang 13 - Vi khuẩn", exp: "Tác nhân gây bệnh nguy hiểm tạo bào tử." },
+        { type: "mcq", question: "Độc tố nấm Ergot thường gây hại cho loại cây nào?", options: ["Ngô", "Lúa mạch (Rye)", "Đậu tương", "Cà phê"], answer: "Lúa mạch (Rye)", cite: "Trang 74 - Vi nấm", exp: "Gây co thắt mạch và ảo giác cho người ăn phải." },
+        { type: "mcq", question: "Thực khuẩn thể lây nhiễm vi khuẩn gọi là?", options: ["Capsid", "Phage", "Virion", "Prion"], answer: "Phage", cite: "Kiến thức", exp: "Bacteriophage." },
+        { type: "mcq", question: "Nấm Aspergillus flavus sinh ra độc tố nguy hiểm nào?", options: ["Penicillin", "Aflatoxin", "Nystatin", "Botulinum"], answer: "Aflatoxin", cite: "Kiến thức", exp: "Gây ung thư gan và ngộ độc hạt mốc." },
+        { type: "mcq", question: "Phẩy khuẩn tả (Vibrio cholerae) thuộc nhóm nào?", options: ["Alpha", "Beta", "Gamma", "Delta"], answer: "Gamma", cite: "Trang 12 - Vi khuẩn", exp: "Gamma Proteobacteria chứa nhiều vi khuẩn đường ruột." },
+        { type: "mcq", question: "Nấm roi sống chủ yếu ở môi trường nào?", options: ["Sa mạc", "Nước hoặc Đất ẩm", "Lá khô", "Không khí"], answer: "Nước hoặc Đất ẩm", cite: "Trang 44 - Vi nấm", exp: "Có bào tử trùng roi di động trong nước." },
+        { type: "mcq", question: "Cấu trúc Mesosome thực chất là?", options: ["Bào quan hô hấp", "Nếp cuộn màng sinh chất", "Vùng chứa DNA", "Hạt dự trữ"], answer: "Nếp cuộn màng sinh chất", cite: "Trang 5 - Vi khuẩn", exp: "Tăng diện tích bề mặt màng." },
+        { type: "mcq", question: "Nấm trong dạ cỏ động vật nhai lại giúp?", options: ["Tiêu hóa cellulose", "Tổng hợp vitamin", "Diệt vi khuẩn", "Hấp thụ nước"], answer: "Tiêu hóa cellulose", cite: "Trang 44 - Vi nấm", exp: "Phá vỡ cấu trúc thực vật khó tiêu." },
+        { type: "mcq", question: "Vi khuẩn Gram âm sau khi tẩy cồn sẽ trở nên?", options: ["Màu tím", "Màu đỏ", "Không màu", "Màu xanh"], answer: "Không màu", cite: "Trang 3 - Vi khuẩn", exp: "Lớp peptidoglycan mỏng dễ bị rửa trôi màu." },
+        { type: "mcq", question: "A. oryzae (mốc vàng) dùng sản xuất gì?", options: ["Bánh mì", "Tương và Nước chấm", "Phô mai", "Rượu vang"], answer: "Tương và Nước chấm", cite: "Trang 57 - Vi nấm", exp: "Có hệ enzyme protease mạnh phân hủy đạm." },
+        { type: "mcq", question: "Bộ gen vi khuẩn thường gồm mấy nhiễm sắc thể?", options: ["1 nhiễm sắc thể tròn", "Nhiều nhiễm sắc thể thẳng", "2 nhiễm sắc thể tròn", "Không có"], answer: "1 nhiễm sắc thể tròn", cite: "Trang 11 - Vi khuẩn", exp: "Đặc điểm di truyền của nhân sơ." },
+        { type: "mcq", question: "Địa y dạng Fruticose có hình dạng?", options: ["Lá cây", "Vảy bám", "Bụi cây / Treo lủng lẳng", "Sợi dài"], answer: "Bụi cây / Treo lủng lẳng", cite: "Trang 69 - Vi nấm", exp: "Phân loại địa y theo hình thái." },
+        { type: "mcq", question: "Hiện tượng 'biến nạp' ở vi khuẩn là?", options: ["Tiếp xúc pilli", "Hấp thụ DNA trần từ môi trường", "Truyền qua virus", "Đột biến"], answer: "Hấp thụ DNA trần từ môi trường", cite: "Trang 9 - Vi khuẩn", exp: "Một hình thức truyền gen ngang." },
+        { type: "mcq", question: "Nấm hoại sinh lấy thức ăn từ đâu?", options: ["Cơ thể sống", "Xác bã hữu cơ chết", "Ánh sáng", "Nước biển"], answer: "Xác bã hữu cơ chết", cite: "Trang 48 - Vi nấm", exp: "Saprophytes đóng vai trò phân hủy." },
+        { type: "mcq", question: "Vỏ nhầy (capsule) của vi khuẩn giúp chúng?", options: ["Di chuyển", "Tránh thực bào", "Quang hợp", "Lên men"], answer: "Tránh thực bào", cite: "Trang 4 - Vi khuẩn", exp: "Bảo vệ vi khuẩn khỏi hệ miễn dịch vật chủ." },
+        { type: "mcq", question: "Nấm Mucor lên men tạo ra sản phẩm gì?", options: ["Rượu và acid hữu cơ", "Sữa chua", "Vắc xin", "Thuốc nhuộm"], answer: "Rượu và acid hữu cơ", cite: "Trang 49 - Vi nấm", exp: "Có khả năng oxy hóa và lên men mạnh." },
+        { type: "mcq", question: "Vi khuẩn tự dưỡng hóa năng lấy năng lượng từ?", options: ["Hợp chất vô cơ (H2S, NH3)", "Chất hữu cơ", "Ánh sáng", "Nhiệt độ"], answer: "Hợp chất vô cơ (H2S, NH3)", cite: "Trang 10 - Vi khuẩn", exp: "Chemoautotroph." },
+        { type: "mcq", question: "Shelf fungi (nấm lỗ) đóng vai trò gì ở rừng?", options: ["Ký sinh người", "Phân hủy gỗ", "Cố định đạm", "Tạo đất"], answer: "Phân hủy gỗ", cite: "Trang 61 - Vi nấm", exp: "Phân hủy gỗ mục rữa." },
+        { type: "mcq", question: "Tiên mao vi khuẩn hoạt động nhờ?", options: ["Cơ bắp", "Dòng proton và động cơ quay", "Gió", "Co giãn sợi"], answer: "Dòng proton và động cơ quay", cite: "Trang 5 - Vi khuẩn", exp: "Động cơ nằm ở tấm nền xuyên qua màng." },
+        { type: "mcq", question: "Sợi nấm rễ (Mycorrhizae) giúp cây hấp thụ tốt nhất?", options: ["Carbon", "Phốt pho", "Oxy", "Nitơ"], answer: "Phốt pho", cite: "Trang 65 - Vi nấm", exp: "Mở rộng diện tích hấp thụ khoáng." },
+        { type: "mcq", question: "Vi khuẩn lam tạo ra chất gì đầu tiên trên Trái đất?", options: ["Mêtan", "Oxy", "CO2", "Lưu huỳnh"], answer: "Oxy", cite: "Trang 13 - Vi khuẩn", exp: "Quang hợp tạo ra Oxy sơ khai." },
+        { type: "mcq", question: "Vách ngăn nấm túi có lỗ nhỏ để?", options: ["Dự trữ nước", "Bào quan di chuyển qua lại", "Thải độc", "Cố định nhân"], answer: "Bào quan di chuyển qua lại", cite: "Trang 50 - Vi nấm", exp: "Giúp dòng tế bào chất lưu thông." },
+        { type: "mcq", question: "Vi khuẩn Gram dương có axit gì ở thành tế bào?", options: ["Axit hữu cơ", "Axit teichoic", "Axit nucleic", "Axit béo"], answer: "Axit teichoic", cite: "Kiến thức", exp: "Thành phần đặc trưng riêng của Gram dương." },
+        { type: "mcq", question: "Nấm Aspergillus niger sản xuất công nghiệp chất gì?", options: ["Penicillin", "Acid citric", "Vitamin B", "Đường"], answer: "Acid citric", cite: "Trang 57 - Vi nấm", exp: "Ứng dụng rất lớn trong thực phẩm." },
+        { type: "mcq", question: "Sexpilli giúp vi khuẩn thực hiện?", options: ["Bám dính", "Di chuyển", "Tiếp hợp chuyển gen", "Phân chia"], answer: "Tiếp hợp chuyển gen", cite: "Trang 4 - Vi khuẩn", exp: "Truyền plasmid giữa các vi khuẩn." },
+
+        // --- FIB (25 CÂU) ---
+        { type: "fib", question: "Nhân tế bào nấm được bao bọc bởi [...].", answer: "màng nhân", cite: "Trang 4 - Nấm", exp: "Nấm là sinh vật nhân thực." },
+        { type: "fib", question: "Lớp peptidoglycan của Gram âm rất [...].", answer: "mỏng", cite: "Trang 3 - Vi khuẩn", exp: "Ngược với Gram dương dày." },
+        { type: "fib", question: "Sợi nấm dài ra theo kiểu tăng trưởng ở [...].", answer: "ngọn / đỉnh", cite: "Trang 8 - Nấm", exp: "Phát triển từ phần đầu." },
+        { type: "fib", question: "Vi khuẩn có gen kháng kháng sinh nằm trên [...].", answer: "plasmid R / plasmid", cite: "Trang 9 - Vi khuẩn", exp: "Có thể truyền ngang." },
+        { type: "fib", question: "Môi trường nuôi nấm có pH [...] tối ưu.", answer: "4-6 / axit", cite: "Trang 14 - Nấm", exp: "Hạn chế vi khuẩn." },
+        { type: "fib", question: "Hạt dự trữ photphat là [...].", answer: "volutin", cite: "Trang 6 - Vi khuẩn", exp: "Chất dự trữ đặc thù." },
+        { type: "fib", question: "Nấm nảy chồi là nấm [...].", answer: "men / saccharomyces", cite: "Trang 37 - Nấm", exp: "Sinh sản vô tính đặc trưng." },
+        { type: "fib", question: "Vi khuẩn [...] chuyển NH4+ thành NO2-.", answer: "Nitrosomonas", cite: "Trang 12 - Vi khuẩn", exp: "Chu trình Nitơ." },
+        { type: "fib", question: "Bào tử đảm nằm trên các [...].", answer: "đảm / basidia", cite: "Trang 60 - Nấm", exp: "Ngành Basidiomycota." },
+        { type: "fib", question: "Vi khuẩn Corynebacterium biến đổi hình dạng theo [...].", answer: "tuổi / giai đoạn sống", cite: "Trang 3 - Vi khuẩn", exp: "Đa hình thái." },
+        { type: "fib", question: "Soredia giúp địa y sinh sản [...].", answer: "vô tính", cite: "Trang 70 - Nấm", exp: "Phát tán mảnh nấm + tảo." },
+        { type: "fib", question: "Vi khuẩn kỵ khí bắt buộc chết khi gặp [...].", answer: "Oxy / O2", cite: "Trang 10 - Vi khuẩn", exp: "Do bị oxy hóa." },
+        { type: "fib", question: "Nystatin trị nấm Candida tìm ra năm [...].", answer: "1950", cite: "Trang 79 - Nấm", exp: "Sự kiện y học quan trọng." },
+        { type: "fib", question: "Vi khuẩn Gram dương mất thành gọi là [...].", answer: "protoplast", cite: "Trang 3 - Vi khuẩn", exp: "Tế bào trần." },
+        { type: "fib", question: "Địa y vảy gọi là [...].", answer: "crustose", cite: "Trang 69 - Nấm", exp: "Phân loại hình thái." },
+        { type: "fib", question: "Sợi tơ nấm xâm nhập tế bào chủ là sợi [...].", answer: "hút / haustoria", cite: "Trang 25 - Nấm", exp: "Hấp thụ dinh dưỡng." },
+        { type: "fib", question: "Vi khuẩn gây bệnh than là Bacillus [...].", answer: "anthracis", cite: "Trang 13 - Vi khuẩn", exp: "Tên khoa học loài." },
+        { type: "fib", question: "Sự hợp nhất nhân tạo thành nhân 2n là [...].", answer: "karyogamy", cite: "Trang 33 - Nấm", exp: "Hợp nhất nhân." },
+        { type: "fib", question: "Thành tế bào vi khuẩn có cấu tạo từ [...].", answer: "peptidoglycan", cite: "Trang 3 - Vi khuẩn", exp: "Mạng lưới đường/amin." },
+        { type: "fib", question: "Bào tử hữu tính nấm tiếp hợp là [...].", answer: "zygospore", cite: "Trang 46 - Nấm", exp: "Ngành Zygomycota." },
+        { type: "fib", question: "Tiên mao xoay tròn như cái [...].", answer: "chân vịt / chân vịt tàu", cite: "Trang 5 - Vi khuẩn", exp: "Cơ chế di động." },
+        { type: "fib", question: "Hợp nhất tế bào chất gọi là [...].", answer: "plasmogamy", cite: "Trang 32 - Nấm", exp: "Tạo dị nhân." },
+        { type: "fib", question: "Gen di truyền chính vi khuẩn nằm ở vùng [...].", answer: "nucleoid / vùng nhân", cite: "Trang 5 - Vi khuẩn", exp: "Nhân sơ." },
+        { type: "fib", question: "Nấm rễ nội cộng sinh thuộc ngành [...].", answer: "Glomeromycetes", cite: "Trang 42 - Nấm", exp: "Phân loại hiện đại." },
+        { type: "fib", question: "Aflatoxin do nấm mốc [...] flavus sinh ra.", answer: "Aspergillus", cite: "Kiến thức", exp: "Gây hại cho gan." }
+    ]
+};
+
+const sim = {
+    exam: [], cur: 0, score: 0, done: false,
+    start(id) {
+        this.exam = examData[id]; this.cur = 0; this.score = 0;
+        document.getElementById('menu').classList.add('hidden');
+        document.getElementById('quiz').classList.remove('hidden');
+        this.show();
+    },
+    show() {
+        this.done = false; const q = this.exam[this.cur];
+        const box = document.getElementById('q-box');
+        document.getElementById('exp').style.display = 'none';
+        document.getElementById('next').classList.add('hidden');
+        document.getElementById('q-idx').innerText = `Câu hỏi: ${this.cur + 1}/50`;
+        document.getElementById('fill').style.width = `${((this.cur + 1)/50)*100}%`;
+        let h = `<h2>${q.question}</h2>`;
+        if(q.type === 'mcq') h += q.options.map(o => `<button class="option-btn" onclick="sim.ansMCQ('${o.replace(/'/g, "\\'")}', this)">${o}</button>`).join('');
+        else h += `<input type="text" id="ans_in" class="fib-input" placeholder="Đáp án của bạn..." autocomplete="off">
+                   <button class="btn" onclick="sim.ansFIB()">GỬI ĐÁP ÁN</button>`;
+        box.innerHTML = h;
+    },
+    ansMCQ(v, el) {
+        if(this.done) return; this.done = true; const q = this.exam[this.cur];
+        if(v === q.answer) { el.classList.add('correct'); this.score += 2; this.rev(true); }
+        else { el.classList.add('wrong'); document.querySelectorAll('.option-btn').forEach(b => { if(b.innerText === q.answer) b.classList.add('correct'); }); this.rev(false); }
+    },
+    ansFIB() {
+        if(this.done) return; this.done = true; const q = this.exam[this.cur]; const input = document.getElementById('ans_in');
+        const isC = q.answer.toLowerCase().split('/').some(a => input.value.trim().toLowerCase().includes(a.trim()));
+        if(isC) { this.score += 2; this.rev(true); } else { this.rev(false); }
+    },
+    rev(c) {
+        const q = this.exam[this.cur];
+        document.getElementById('exp-cite').innerText = q.cite;
+        document.getElementById('exp-txt').innerText = (c ? "CHÍNH XÁC! " : "SAI. Đáp án đúng là: " + q.answer + ". ") + q.exp;
+        document.getElementById('exp').style.display = 'block';
+        document.getElementById('next').classList.remove('hidden');
+        document.getElementById('q-score').innerText = `Điểm: ${this.score}`;
+    },
+    next() {
+        this.cur++;
+        if(this.cur < this.exam.length) this.show();
+        else this.finish();
+    },
+    finish() {
+        document.getElementById('quiz').classList.add('hidden');
+        document.getElementById('res').classList.remove('hidden');
+        document.getElementById('f-score').innerText = this.score;
+        document.getElementById('msg').innerText = this.score >= 80 ? "Xuất sắc! Bạn đã nắm chắc kiến thức Vi khuẩn & Vi nấm." : "Khá tốt. Hãy xem lại các câu sai để chuẩn bị tốt hơn.";
+    }
+};
+</script>
+</body>
+</html>
